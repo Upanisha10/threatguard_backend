@@ -1,0 +1,17 @@
+package com.example.threatguard_demo.constants;
+
+public enum AuditAction {
+    LOGIN_SUCCESS,
+    LOGIN_FAILURE,
+    LOGOUT,
+    USER_CREATED,
+    USER_UPDATED,
+    USER_DELETED,
+    ROLE_CHANGED,
+    PASSWORD_RESET_REQUEST,
+    PASSWORD_RESET_SUCCESS,
+    PASSWORD_RESET_FAILURE,
+    FORBIDDEN_ACTION,
+    UNAUTHORIZED_ACCESS
+}
+
