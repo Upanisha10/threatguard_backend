@@ -1,5 +1,7 @@
 package com.example.threatguard_demo.service.user;
 
+import com.example.threatguard_demo.annotations.AuditLog;
+import com.example.threatguard_demo.constants.AuditAction;
 import com.example.threatguard_demo.models.entities.User;
 import com.example.threatguard_demo.repository.UserRepository;
 import com.example.threatguard_demo.utils.JwtUtil;
@@ -20,6 +22,7 @@ public class PasswordResetService {
     @Autowired
     private EmailService emailService;
 
+    @AuditLog(action = AuditAction.PASSWORD_RESET_REQUEST, entityType = "USER")
     public void sendResetEmail(String email) {
 
         Optional<User> optionalUser = userRepository.findByEmail(email);

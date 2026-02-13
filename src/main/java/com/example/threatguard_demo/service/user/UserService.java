@@ -44,6 +44,7 @@ public class UserService {
     // CREATE USER
     // =========================
 
+    @AuditLog(action = AuditAction.USER_CREATED, entityType = "USER")
     public ResponseEntity<?> registerUser(String name, String email, Role role) {
 
         User user = new User();
@@ -123,7 +124,8 @@ public class UserService {
         return ResponseEntity.ok(
                 Map.of(
                         "message", "User updated successfully",
-                        "id", existingUser.getId()
+                        "userId", existingUser.getUserId()
+
                 )
         );
     }
@@ -136,17 +138,24 @@ public class UserService {
     @AuditLog(action = AuditAction.USER_DELETED, entityType = "USER")
     public ResponseEntity<?> deleteUserById(Long id) {
 
-        if (!userRepository.existsById(id)) {
+        Optional<User> userOpt = userRepository.findById(id);
+
+        if (userOpt.isEmpty()) {
             return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
         }
 
-        userRepository.deleteById(id);
+        User user = userOpt.get();   // 🔥 we load full user first
+
+        userRepository.delete(user); // delete using entity
 
         return ResponseEntity.ok(
-                Map.of("message", "User deleted successfully")
+                Map.of(
+                        "message", "User deleted successfully",
+                        "userId", user.getUserId()  // 🔥 important
+                )
         );
-
     }
+
 
     // =========================
     // GET ALL USERS

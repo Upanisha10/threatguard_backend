@@ -43,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/reset-password").permitAll()
                         .requestMatchers("/api/auth/forgot-password").permitAll()
                         .requestMatchers("/api/alerts/**").permitAll()
+                        .requestMatchers("/api/audit").hasRole("ADMIN")
                         .requestMatchers("/login").permitAll()
                         .requestMatchers("/api/sessions").permitAll()
                         .requestMatchers("/api/users/**").hasRole("ADMIN")

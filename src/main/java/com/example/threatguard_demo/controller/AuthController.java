@@ -1,13 +1,17 @@
 package com.example.threatguard_demo.controller;
 
+import com.example.threatguard_demo.annotations.AuditLog;
+import com.example.threatguard_demo.constants.AuditAction;
 import com.example.threatguard_demo.models.DTO.LoginRequest;
 import com.example.threatguard_demo.models.DTO.LoginResponse;
 import com.example.threatguard_demo.models.DTO.ResetPasswordRequest;
 import com.example.threatguard_demo.models.entities.User;
 import com.example.threatguard_demo.repository.UserRepository;
+import com.example.threatguard_demo.service.audit.AuditLogService;
 import com.example.threatguard_demo.service.user.CustomUserDetailsService;
 import com.example.threatguard_demo.service.user.PasswordResetService;
 import com.example.threatguard_demo.utils.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,29 +46,66 @@ public class AuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private AuditLogService auditLogService;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(
+            @RequestBody LoginRequest loginRequest,
+            HttpServletRequest httpRequest
+    ) {
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUserId(),
-                        request.getPassword()
-                )
-        );
+        try {
 
-        User user = userRepository.findByUserId(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getUserId(),
+                            loginRequest.getPassword()
+                    )
+            );
 
-        UserDetails userDetails =
-                userDetailsService.loadUserByUsername(request.getUserId());
+            User user = userRepository.findByUserId(loginRequest.getUserId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-        String token = jwtUtil.generateToken(userDetails);
+            UserDetails userDetails =
+                    userDetailsService.loadUserByUsername(loginRequest.getUserId());
 
-        return ResponseEntity.ok(
-                new LoginResponse(token, user.getRole().name())
-        );
+            String token = jwtUtil.generateToken(userDetails);
+
+            // ✅ Use httpRequest here
+            auditLogService.log(
+                    AuditAction.LOGIN_SUCCESS,
+                    "USER",
+                    user.getUserId(),
+                    user.getUserId(),
+                    user.getRole().name(),
+                    httpRequest.getRemoteAddr(),
+                    httpRequest.getRequestURI(),
+                    true
+            );
+
+            return ResponseEntity.ok(
+                    new LoginResponse(token, user.getRole().name())
+            );
+
+        } catch (Exception e) {
+
+            auditLogService.log(
+                    AuditAction.LOGIN_FAILURE,
+                    "USER",
+                    loginRequest.getUserId(),
+                    loginRequest.getUserId(),
+                    "UNKNOWN",
+                    httpRequest.getRemoteAddr(),
+                    httpRequest.getRequestURI(),
+                    false
+            );
+
+            throw e;
+        }
     }
+
+
 
 
     @PostMapping("/request-reset")
