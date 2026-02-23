@@ -1,9 +1,6 @@
 package com.example.threatguard_demo.controller;
 
-import com.example.threatguard_demo.models.DTO.AsnCount;
-import com.example.threatguard_demo.models.DTO.AttackTrend;
-import com.example.threatguard_demo.models.DTO.CountryCount;
-import com.example.threatguard_demo.models.DTO.RiskDistribution;
+import com.example.threatguard_demo.models.DTO.*;
 import com.example.threatguard_demo.service.analytics.AnalyticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,11 +12,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/analytics")
-@RequiredArgsConstructor
 public class AnalyticsController {
 
-    @Autowired
-    private AnalyticsService analyticsService;
+    private final AnalyticsService analyticsService;
+
+    public AnalyticsController(AnalyticsService analyticsService) {
+        this.analyticsService = analyticsService;
+    }
 
     @GetMapping("/attack-trend")
     public List<AttackTrend> attackTrend() {
@@ -45,5 +44,28 @@ public class AnalyticsController {
     public Long activeSessions() {
         return analyticsService.getActiveSessionCount();
     }
+
+    @GetMapping("/total-attacks")
+    public Long totalAttacks() {
+        return analyticsService.getTotalAttacks();
+    }
+
+    @GetMapping("/critical-count")
+    public Long criticalCount() {
+        return analyticsService.getCriticalCount();
+    }
+
+    @GetMapping("/attack-types")
+    public List<AttackTypeCount> attackTypes() {
+        return analyticsService.getAttackTypeDistribution();
+    }
+
+    @GetMapping("/avg-risk")
+    public Double avgRisk() {
+        return analyticsService.getAverageRiskScore();
+    }
+
+
+
 }
 

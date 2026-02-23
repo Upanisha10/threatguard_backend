@@ -51,6 +51,18 @@ public interface EventRepository
 
     List<EventEntity> findBySession_SessionIdOrderByTimestampAsc(UUID sessionId);
 
+    Long countBySeverity(String severity);
+
+    @Query("SELECT AVG(e.riskScore) FROM EventEntity e")
+    Double getAverageRiskScore();
+
+    @Query("""
+    SELECT e.attackType, COUNT(e)
+    FROM EventEntity e
+    GROUP BY e.attackType
+""")
+    List<Object[]> getAttackTypeDistribution();
+
 
 }
 

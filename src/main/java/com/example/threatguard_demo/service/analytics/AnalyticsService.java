@@ -1,9 +1,6 @@
 package com.example.threatguard_demo.service.analytics;
 
-import com.example.threatguard_demo.models.DTO.AsnCount;
-import com.example.threatguard_demo.models.DTO.AttackTrend;
-import com.example.threatguard_demo.models.DTO.CountryCount;
-import com.example.threatguard_demo.models.DTO.RiskDistribution;
+import com.example.threatguard_demo.models.DTO.*;
 import com.example.threatguard_demo.repository.EventRepository;
 import com.example.threatguard_demo.repository.SessionRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,10 +10,11 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class AnalyticsService {
 
+    @Autowired
     private EventRepository eventRepo;
+    @Autowired
     private SessionRepository sessionRepo;
 
 
@@ -47,4 +45,23 @@ public class AnalyticsService {
     public Long getActiveSessionCount() {
         return sessionRepo.countActiveSessions();
     }
+    public Long getTotalAttacks() {
+        return eventRepo.count();
+    }
+    public Long getCriticalCount() {
+        return eventRepo.countBySeverity("critical");
+    }
+
+    public List<AttackTypeCount> getAttackTypeDistribution() {
+        return eventRepo.getAttackTypeDistribution().stream()
+                .map(r -> new AttackTypeCount((String) r[0], (Long) r[1]))
+                .toList();
+    }
+
+    public Double getAverageRiskScore() {
+        return eventRepo.getAverageRiskScore();
+    }
+
+
+
 }
