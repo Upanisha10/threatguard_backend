@@ -1,6 +1,7 @@
 package com.example.threatguard_demo.controller;
 
 import com.example.threatguard_demo.models.DTO.*;
+import com.example.threatguard_demo.repository.SessionRepository;
 import com.example.threatguard_demo.service.analytics.AnalyticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,9 @@ import java.util.List;
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
+
+    @Autowired
+    private SessionRepository sessionRepository;
 
     public AnalyticsController(AnalyticsService analyticsService) {
         this.analyticsService = analyticsService;
@@ -63,6 +67,11 @@ public class AnalyticsController {
     @GetMapping("/avg-risk")
     public Double avgRisk() {
         return analyticsService.getAverageRiskScore();
+    }
+
+    @GetMapping("/attack-map")
+    public List<AttackLocation> getAttackMap() {
+        return sessionRepository.getAttackLocations();
     }
 
 

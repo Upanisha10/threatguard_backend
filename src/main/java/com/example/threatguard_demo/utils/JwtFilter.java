@@ -45,10 +45,10 @@ public class JwtFilter extends OncePerRequestFilter {
 
             if (jwtUtil.validateToken(token, userDetails)) {
 
-                System.out.println("---- JWT DEBUG ----");
-                System.out.println("Authenticated user: " + username);
-                System.out.println("Authorities: " + userDetails.getAuthorities());
-                System.out.println("-------------------");
+//                System.out.println("---- JWT DEBUG ----");
+//                System.out.println("Authenticated user: " + username);
+//                System.out.println("Authorities: " + userDetails.getAuthorities());
+//                System.out.println("-------------------");
 
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(

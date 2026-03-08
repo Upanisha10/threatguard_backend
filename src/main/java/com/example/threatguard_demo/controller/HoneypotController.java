@@ -6,6 +6,7 @@ import com.example.threatguard_demo.models.entities.SessionEntity;
 import com.example.threatguard_demo.service.ML.LLMService;
 import com.example.threatguard_demo.service.events.EventService;
 import com.example.threatguard_demo.service.events.MLAnalysisService;
+import com.example.threatguard_demo.service.sessions.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,9 @@ public class HoneypotController {
     @Autowired
     private LLMService llmService;
 
+    @Autowired
+    private SessionService sessionService;
+
 
     @PostMapping("/login")
     public ResponseEntity<?> fakeLogin(
@@ -36,31 +40,33 @@ public class HoneypotController {
             @RequestBody String payload
     ) {
 
-        SessionEntity session =
-                (SessionEntity) request.getAttribute("SESSION");
+        String ip = request.getHeader("X-Forwarded-For");
 
-        // 1 Log raw event
-        EventEntity event =
-                eventService.logRawEvent(session, payload);
+        if (ip != null && !ip.isBlank()) {
+            ip = ip.split(",")[0].trim();
+        } else {
+            ip = request.getRemoteAddr();
+        }
+        if (ip.equals("127.0.0.1") || ip.equals("::1") || ip.equals("0:0:0:0:0:0:0:1")) {
+            ip = "127.0.0.1";
+        }
 
-        // 2 ML Analysis
-        MLResult result =
-                mlService.analyse(payload);
+        String ua = request.getHeader("User-Agent");
 
-        // 3 Update event with ML classification
+        SessionEntity session = sessionService.getOrCreateSession(ip, ua);
+
+        EventEntity event = eventService.logRawEvent(session, payload);
+
+        MLResult result = mlService.analyse(payload);
+
         eventService.updateWithMLResult(event, result);
 
-        List<EventEntity> history =
-                eventService.getRecentConversation(session);
+        List<EventEntity> history = eventService.getRecentConversation(session);
 
-        // 4 Generate LLM response
-        String llmResponse =
-                llmService.generateResponse(payload,history);
+        String llmResponse = llmService.generateResponse(payload, history);
 
-        // 5 SAVE LLM response
         eventService.saveResponse(event, llmResponse);
 
-        // 6 Return response to attacker
         return ResponseEntity.ok(llmResponse);
     }
 

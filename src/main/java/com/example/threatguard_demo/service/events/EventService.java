@@ -6,6 +6,7 @@ import com.example.threatguard_demo.models.entities.SessionEntity;
 import com.example.threatguard_demo.repository.EventRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,6 +16,9 @@ public class EventService {
 
     @Autowired
     private EventRepository eventRepo;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     public EventEntity logRawEvent(
             SessionEntity session,
@@ -26,7 +30,14 @@ public class EventService {
         event.setRawPayload(payload);
         event.setAnalysed(false);
 
-        return eventRepo.save(event);
+        EventEntity saved = eventRepo.save(event);
+
+        messagingTemplate.convertAndSend(
+                "/topic/session/" + session.getSessionId(),
+                saved
+        );
+
+        return saved;
     }
 
     public EventEntity updateWithMLResult(
@@ -42,8 +53,14 @@ public class EventService {
     }
 
     public void saveResponse(EventEntity event, String response) {
+
         event.setResponsePayload(response);
-        eventRepo.save(event);
+        EventEntity saved = eventRepo.save(event);
+
+        messagingTemplate.convertAndSend(
+                "/topic/session/" + event.getSession().getSessionId(),
+                saved
+        );
     }
 
     public List<EventEntity> getRecentConversation(SessionEntity session) {
