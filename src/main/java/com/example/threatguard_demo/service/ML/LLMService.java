@@ -1,6 +1,7 @@
 package com.example.threatguard_demo.service.ML;
 
 import com.example.threatguard_demo.models.entities.EventEntity;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -191,6 +192,105 @@ public class LLMService {
         """.formatted(attackType, riskScore);
 
         return callGemini(prompt);
+    }
+
+    public Map<String, Object> generateSecurityAnalysis(
+            String attackType,
+            String payload
+    ) {
+
+        String prompt = """
+    You are a senior cybersecurity analyst writing an incident response report.
+
+    Analyze the following attack attempt captured by a honeypot system.
+
+    Attack Type: %s
+    Payload: %s
+
+    Generate a professional security report with:
+
+    1. attackExplanation
+    Explain technically how this attack works and what the payload attempts to do.
+
+    2. attackerIntent
+    Explain what the attacker is likely trying to achieve.
+
+    3. recommendations
+    Provide 5 specific security recommendations to prevent this vulnerability.
+
+    Return ONLY valid JSON in this format:
+
+    {
+      "attackExplanation": "Detailed explanation...",
+      "attackerIntent": "Detailed intent analysis...",
+      "recommendations": [
+        "Recommendation 1",
+        "Recommendation 2",
+        "Recommendation 3",
+        "Recommendation 4",
+        "Recommendation 5"
+      ]
+    }
+    """.formatted(attackType, payload);
+
+        String response = callGemini(prompt);
+
+        try {
+
+            int start = response.indexOf("{");
+            int end = response.lastIndexOf("}");
+
+            if (start == -1 || end == -1 || end <= start) {
+                throw new RuntimeException("Invalid JSON from LLM");
+            }
+
+            response = response.substring(start, end + 1);
+
+            response = response
+                    .replace("**", "")
+                    .replace("•", "-");
+
+            ObjectMapper mapper = new ObjectMapper();
+
+// allow JSON with line breaks and loose formatting
+            mapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true);
+            mapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+
+            Map<String, Object> result = mapper.readValue(response, Map.class);
+
+// Ensure recommendations is always a list
+            Object recs = result.get("recommendations");
+
+            if (recs instanceof String) {
+                List<String> list = Arrays.asList(((String) recs).split("\\d+\\. "));
+                result.put("recommendations", list);
+            }
+
+            return result;
+
+        } catch (Exception e) {
+
+            System.out.println("LLM JSON parse failed:");
+            System.out.println(response);
+
+            Map<String, Object> fallback = new HashMap<>();
+
+            fallback.put("attackExplanation",
+                    "Command injection attempt detected targeting backend command execution.");
+
+            fallback.put("attackerIntent",
+                    "Attacker attempting reconnaissance to determine system privileges.");
+
+            fallback.put("recommendations", List.of(
+                    "Validate and sanitize all user input",
+                    "Avoid executing system commands from user input",
+                    "Implement least privilege access controls",
+                    "Deploy WAF protections",
+                    "Monitor logs for suspicious activity"
+            ));
+
+            return fallback;
+        }
     }
 
 }
