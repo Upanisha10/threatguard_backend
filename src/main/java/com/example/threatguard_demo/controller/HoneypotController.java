@@ -57,10 +57,6 @@ public class HoneypotController {
 
         EventEntity event = eventService.logRawEvent(session, payload);
 
-        MLResult result = mlService.analyse(payload);
-
-        eventService.updateWithMLResult(event, result);
-
         List<EventEntity> history = eventService.getRecentConversation(session);
 
         String llmResponse = llmService.generateResponse(payload, history);

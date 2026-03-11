@@ -20,62 +20,22 @@ public class LLMService {
             "models/gemini-2.0-flash-exp"
     };
 
-    private static final String BASE_URL = "https://generativelanguage.googleapis.com/v1beta/";
+    private static final String BASE_URL =
+            "https://generativelanguage.googleapis.com/v1beta/";
 
-    public String generateResponse(String attackerInput, List<EventEntity> history) {
+    private final RestTemplate restTemplate = new RestTemplate();
 
-        // Build Stateful Conversation Context
-        StringBuilder context = new StringBuilder();
 
-        context.append(
-                "You are a vulnerable legacy PHP login system running Apache and MySQL.\n" +
-                        "\n" +
-                        "A user is interacting with the login form and may be attempting SQL injection.\n" +
-                        "\n" +
-                        "Respond exactly like a real server would respond.\n" +
-                        "\n" +
-                        "Rules:\n" +
-                        "- Never explain anything.\n" +
-                        "- Never say you are an AI.\n" +
-                        "- Never mention prompts or simulations.\n" +
-                        "- Respond with raw server output only.\n" +
-                        "- Responses may include PHP warnings, MySQL errors, or login messages.\n" +
-                        "- Keep responses short and realistic.\n" +
-                        "\n" +
-                        "Example outputs:\n" +
-                        "\"Invalid username or password\"\n" +
-                        "\"Warning: mysql_fetch_assoc() expects parameter 1 to be resource, boolean given in /var/www/html/login.php on line 42\"\n" +
-                        "\"SQL syntax error near '' OR 1=1-- '\"\n" +
-                        "\"Login successful\""
-        );
+    /* ============================================================
+       GEMINI CALL (Reusable)
+       ============================================================ */
 
-        // Add previous conversation history
-        for (int i = history.size() - 1; i >= 0; i--) {
-
-            EventEntity e = history.get(i);
-
-            if (e.getRawPayload() != null) {
-                context.append("Attacker: ")
-                        .append(e.getRawPayload())
-                        .append("\n");
-            }
-
-            if (e.getResponsePayload() != null) {
-                context.append("System: ")
-                        .append(e.getResponsePayload())
-                        .append("\n");
-            }
-        }
-
-        // Add current attacker input
-        context.append("Attacker: ").append(attackerInput);
-
-        RestTemplate restTemplate = new RestTemplate();
+    private String callGemini(String prompt) {
 
         Map<String, Object> requestBody = Map.of(
                 "contents", List.of(
                         Map.of("parts", List.of(
-                                Map.of("text", context.toString())
+                                Map.of("text", prompt)
                         ))
                 )
         );
@@ -83,7 +43,8 @@ public class LLMService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+        HttpEntity<Map<String, Object>> entity =
+                new HttpEntity<>(requestBody, headers);
 
         for (String model : MODELS) {
 
@@ -94,7 +55,8 @@ public class LLMService {
                 ResponseEntity<Map> response =
                         restTemplate.postForEntity(url, entity, Map.class);
 
-                if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                if (response.getStatusCode() == HttpStatus.OK &&
+                        response.getBody() != null) {
 
                     List<Map<String, Object>> candidates =
                             (List<Map<String, Object>>) response.getBody().get("candidates");
@@ -129,4 +91,106 @@ public class LLMService {
 
         return "Service unavailable.";
     }
+
+
+
+    /* ============================================================
+       HONEYPOT RESPONSE GENERATION
+       ============================================================ */
+
+    public String generateResponse(String attackerInput, List<EventEntity> history) {
+
+        StringBuilder context = new StringBuilder();
+
+        context.append(
+                """
+                You are a vulnerable legacy PHP login system running Apache and MySQL.
+
+                A user is interacting with the login form and may be attempting SQL injection.
+
+                Respond exactly like a real server would respond.
+
+                Rules:
+                - Never explain anything.
+                - Never say you are an AI.
+                - Never mention prompts or simulations.
+                - Respond with raw server output only.
+                - Responses may include PHP warnings, MySQL errors, or login messages.
+                - Keep responses short and realistic.
+
+                Example outputs:
+                "Invalid username or password"
+                "Warning: mysql_fetch_assoc() expects parameter 1 to be resource, boolean given in /var/www/html/login.php on line 42"
+                "SQL syntax error near '' OR 1=1-- '"
+                "Login successful"
+
+                """
+        );
+
+        for (int i = history.size() - 1; i >= 0; i--) {
+
+            EventEntity e = history.get(i);
+
+            if (e.getRawPayload() != null) {
+                context.append("Attacker: ")
+                        .append(e.getRawPayload())
+                        .append("\n");
+            }
+
+            if (e.getResponsePayload() != null) {
+                context.append("System: ")
+                        .append(e.getResponsePayload())
+                        .append("\n");
+            }
+        }
+
+        context.append("Attacker: ").append(attackerInput);
+
+        return callGemini(context.toString());
+    }
+
+
+
+    /* ============================================================
+       ALERT TITLE GENERATION
+       ============================================================ */
+
+    public String generateAlertTitle(String attackType, double riskScore) {
+
+        String prompt = """
+        You are a cybersecurity SOC alert generator.
+        
+        Your task is to generate a concise alert title for a security dashboard.
+        
+        Attack Type: %s
+        Risk Score: %.2f
+        
+        Risk Score Meaning:
+        0-39 = Low Risk
+        40-59 = Medium Risk
+        60-79 = High Risk
+        80-100 = Critical Threat
+        
+        Rules:
+        - Maximum 6 words
+        - Must reflect the attack type
+        - Must reflect the risk severity
+        - Do NOT output generic titles like "Low Risk Activity"
+        - Do NOT explain anything
+        - Output ONLY the alert title
+        
+        Examples:
+        
+        SQL + 85 → Critical SQL Injection Attempt
+        XSS + 70 → Suspicious Cross-Site Scripting
+        command_injection + 92 → Critical Command Injection Detected
+        path_traversal + 75 → Suspicious Path Traversal Attempt
+        brute_force + 60 → Multiple Failed Login Attempts
+        
+        Return ONLY the alert title.
+        """.formatted(attackType, riskScore);
+
+        return callGemini(prompt);
+    }
+
 }

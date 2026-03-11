@@ -20,10 +20,17 @@ public class EventService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
+    @Autowired
+    private MLAnalysisService mlAnalysisService;
+
+    @Autowired
+    private AlertService alertService;
+
     public EventEntity logRawEvent(
             SessionEntity session,
             String payload
     ) {
+
         EventEntity event = new EventEntity();
         event.setSession(session);
         event.setTimestamp(LocalDateTime.now());
@@ -32,29 +39,40 @@ public class EventService {
 
         EventEntity saved = eventRepo.save(event);
 
+        // Send raw event to frontend
         messagingTemplate.convertAndSend(
                 "/topic/session/" + session.getSessionId(),
                 saved
         );
 
-        return saved;
-    }
+        // -------- ML ANALYSIS --------
 
-    public EventEntity updateWithMLResult(
-            EventEntity event,
-            MLResult result
-    ) {
-        event.setAttackType(result.attackType());
-        event.setRiskScore(result.riskScore());
-        event.setSeverity(result.severity());
-        event.setAnalysed(true);
+        MLResult result = mlAnalysisService.analyse(payload);
 
-        return eventRepo.save(event);
+        saved.setAttackType(result.attackType());
+        saved.setRiskScore(result.riskScore());
+        saved.setSeverity(result.severity());
+        saved.setAnalysed(true);
+
+        String alertTitle = alertService.generateAlertTitle(saved);
+
+        saved.setAlertTitle(alertTitle);
+
+        EventEntity updated = eventRepo.save(saved);
+
+        // Send analysed event to frontend
+        messagingTemplate.convertAndSend(
+                "/topic/session/" + session.getSessionId(),
+                updated
+        );
+
+        return updated;
     }
 
     public void saveResponse(EventEntity event, String response) {
 
         event.setResponsePayload(response);
+
         EventEntity saved = eventRepo.save(event);
 
         messagingTemplate.convertAndSend(
@@ -66,6 +84,4 @@ public class EventService {
     public List<EventEntity> getRecentConversation(SessionEntity session) {
         return eventRepo.findTop10BySessionOrderByTimestampDesc(session);
     }
-
-
 }

@@ -3,20 +3,25 @@ import java.time.LocalDateTime;
 
 public class AlertDTO {
 
-    private String sessionId;
+    private String id;
+    private String alertTitle;
     private Double riskScore;
     private String severity;
     private LocalDateTime latestEventTime;
 
-    public AlertDTO(String sessionId, Double riskScore, String severity, LocalDateTime latestEventTime) {
-        this.sessionId = sessionId;
+    public AlertDTO(String id, String alertTitle, Double riskScore, String severity, LocalDateTime latestEventTime) {
+        this.id = id;
+        this.alertTitle = alertTitle;
         this.riskScore = riskScore;
         this.severity = severity;
         this.latestEventTime = latestEventTime;
     }
 
-    public String getSessionId() { return sessionId; }
+    public String getId() { return id; }
     public Double getRiskScore() { return riskScore; }
     public String getSeverity() { return severity; }
     public LocalDateTime getLatestEventTime() { return latestEventTime; }
+    public String getAlertTitle() {
+        return alertTitle;
+    }
 }

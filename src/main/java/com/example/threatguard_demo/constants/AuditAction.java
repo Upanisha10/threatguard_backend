@@ -41,18 +41,6 @@ public enum AuditAction {
     ALERT_VIEWED,
     ALERT_RESOLVED,
     ALERT_DISMISSED,
-
-    // =====================
-    // ANALYTICS / DASHBOARD
-    // =====================
-    DASHBOARD_VIEWED,
-    ANALYTICS_VIEWED,
-
-    // =====================
-    // SYSTEM CONFIG
-    // =====================
-    SETTINGS_UPDATED,
-    SYSTEM_CONFIGURATION_CHANGED
 }
 
 

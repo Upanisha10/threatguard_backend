@@ -4,6 +4,7 @@ import com.example.threatguard_demo.models.entities.EventEntity;
 import com.example.threatguard_demo.models.entities.SessionEntity;
 import com.example.threatguard_demo.repository.EventRepository;
 import com.example.threatguard_demo.repository.SessionRepository;
+import com.example.threatguard_demo.service.sessions.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,6 +24,9 @@ public class SessionController {
     @Autowired
     private EventRepository eventRepository;
 
+    @Autowired
+    private SessionService sessionService;
+
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','ANALYST')")
     public ResponseEntity<List<SessionEntity>> getAllSessions() {
@@ -41,5 +45,13 @@ public class SessionController {
                 eventRepository.findBySession_SessionIdOrderByTimestampAsc(uuid);
 
         return ResponseEntity.ok(events);
+    }
+
+    @PostMapping("/{id}/terminate")
+    public ResponseEntity<?> terminateSession(@PathVariable UUID id) {
+
+        SessionEntity session = sessionService.terminateSession(id);
+
+        return ResponseEntity.ok(session);
     }
 }

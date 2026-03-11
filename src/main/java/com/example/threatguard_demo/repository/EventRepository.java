@@ -40,12 +40,14 @@ public interface EventRepository
     List<EventEntity> findTop10BySessionOrderByTimestampDesc(SessionEntity session);
 
     @Query("""
-    SELECT e.session.sessionId,
-           MAX(e.riskScore),
-           MAX(e.timestamp)
-    FROM EventEntity e
-    GROUP BY e.session.sessionId
-    """)
+        SELECT e.session.sessionId, e.alertTitle, e.riskScore, e.timestamp
+        FROM EventEntity e
+        WHERE e.riskScore = (
+            SELECT MAX(e2.riskScore)
+            FROM EventEntity e2
+            WHERE e2.session.sessionId = e.session.sessionId
+        )
+        """)
     List<Object[]> getSessionRiskAggregation();
 
 

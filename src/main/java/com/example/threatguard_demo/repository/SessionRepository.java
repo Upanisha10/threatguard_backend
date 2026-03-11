@@ -37,5 +37,13 @@ public interface SessionRepository
     WHERE s.latitude IS NOT NULL AND s.longitude IS NOT NULL
     """)
         List<AttackLocation> getAttackLocations();
+
+    Optional<SessionEntity> findTopBySourceIpAndUserAgentAndStateOrderByLastActivityDesc(
+            String sourceIp,
+            String userAgent,
+            SessionState state
+    );
+
+    List<SessionEntity> findByState(SessionState state);
 }
 

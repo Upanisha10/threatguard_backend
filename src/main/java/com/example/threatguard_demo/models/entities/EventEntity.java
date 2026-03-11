@@ -33,6 +33,8 @@ public class EventEntity {
     @Column(columnDefinition = "TEXT")
     private String responsePayload;
 
+    private String alertTitle;
+
 
     // getters & setters
 
@@ -106,5 +108,13 @@ public class EventEntity {
 
     public void setResponsePayload(String responsePayload) {
         this.responsePayload = responsePayload;
+    }
+
+    public String getAlertTitle() {
+        return alertTitle;
+    }
+
+    public void setAlertTitle(String alertTitle) {
+        this.alertTitle = alertTitle;
     }
 }
