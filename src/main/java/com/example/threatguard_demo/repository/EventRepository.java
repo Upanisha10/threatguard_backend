@@ -65,6 +65,21 @@ public interface EventRepository
 """)
     List<Object[]> getAttackTypeDistribution();
 
+    @Query("""
+        SELECT e.severity, COUNT(e)
+        FROM EventEntity e
+        GROUP BY e.severity
+        """)
+    List<Object[]> countEventsBySeverity();
+
+    @Query("""
+        SELECT e.alertTitle, e.severity, e.timestamp
+        FROM EventEntity e
+        ORDER BY e.timestamp DESC
+        LIMIT 5
+        """)
+    List<Object[]> findRecentEvents();
+
 
 }
 

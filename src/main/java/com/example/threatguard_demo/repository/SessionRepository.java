@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.web.bind.support.SessionStatus;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,5 +46,11 @@ public interface SessionRepository
     );
 
     List<SessionEntity> findByState(SessionState state);
+
+    @Query("SELECT COUNT(s) FROM SessionEntity s WHERE s.startTime >= :since")
+    Long countSessionsSince(LocalDateTime since);
+
+    @Query("SELECT COUNT(s) FROM SessionEntity s WHERE s.state = 'TERMINATED'")
+    Long countTerminatedSessions();
 }
 
