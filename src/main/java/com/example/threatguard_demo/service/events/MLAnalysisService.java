@@ -13,7 +13,7 @@ public class MLAnalysisService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     // Your Flask ML API endpoint
-    private final String ML_API_URL = "http://localhost:5050/predict";
+    private final String ML_API_URL = "https://threatguardml-production.up.railway.app/predict";
 
     /**
      * Analyse a raw payload string using the ML API.
