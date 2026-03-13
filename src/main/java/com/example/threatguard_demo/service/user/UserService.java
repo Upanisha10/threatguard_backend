@@ -69,7 +69,7 @@ public class UserService {
             String token = jwtUtil.generatePasswordResetToken(generatedId);
 
             String resetLink =
-                    "http://localhost:5173/reset-password?token=" + token;
+                    "https://threatguard-frontend.vercel.app/reset-password?token=" + token;
 
             String body =
                     "Hello " + name +
